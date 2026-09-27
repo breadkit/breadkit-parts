@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: breadkit/breadkit
+          ref: 535e615553cf15a89c429b8a307262d675ee0d8a
+          path: breadkit-core
+          persist-credentials: false
+      - uses: ruby/setup-ruby@a0102e0972be65f351c307e2d64b9314a57c8073 # v1.324.0
+        with:
+          ruby-version: "4.0"
+      - run: bundle install
+        working-directory: breadkit-core
+      - run: ruby test/pico_w_test.rb
+      - run: bundle exec ruby -I lib ../test/placement_test.rb
+        working-directory: breadkit-core
+      - name: Validate part definitions
+        run: |
+          for file in ../parts/*.yml; do
+            bundle exec breadkit check-part "$file"
+          done
+          bundle exec breadkit nets ../test/fixtures/pico_w.bk.yml > /dev/null
+        working-directory: breadkit-core

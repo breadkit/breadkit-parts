@@ -1,0 +1,4 @@
+board: full
+use_parts: [../../parts/raspberry_pi_pico_w.yml]
+parts:
+  - {ref: MCU, type: pico_w, at: c1}
