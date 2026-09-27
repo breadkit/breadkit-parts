@@ -1,19 +1,15 @@
 # frozen_string_literal: true
 
-require "minitest/autorun"
 require "breadkit"
 
-class PlacementTest < Minitest::Test
-  CIRCUIT_PATH = File.expand_path("fixtures/pico_w.bk.yml", __dir__)
+circuit_path = File.expand_path("fixtures/pico_w.bk.yml", __dir__)
+circuit = Breadkit.load(circuit_path)
+raise "Pico W placement has errors" if circuit.diagnostics.any? { |diagnostic| diagnostic.severity == "error" }
 
-  def test_usb_up_placement_uses_left_c_and_right_h_columns
-    circuit = Breadkit.load(CIRCUIT_PATH)
-    mcu = circuit.components.fetch("MCU")
-
-    assert_empty circuit.diagnostics.select { |diagnostic| diagnostic.severity == "error" }
-    assert_equal "c1", mcu.pin(1).hole_id
-    assert_equal "c20", mcu.pin(20).hole_id
-    assert_equal "h20", mcu.pin(21).hole_id
-    assert_equal "h1", mcu.pin(40).hole_id
-  end
+mcu = circuit.components.fetch("MCU")
+expected_holes = { 1 => "c1", 20 => "c20", 21 => "h20", 40 => "h1" }
+expected_holes.each do |pin_number, hole_id|
+  raise "Pico W pin #{pin_number} should be in #{hole_id}" unless mcu.pin(pin_number).hole_id == hole_id
 end
+
+puts "Pico W board placement verified"

@@ -1,46 +1,29 @@
 # frozen_string_literal: true
 
-require "minitest/autorun"
 require "yaml"
 
-class PicoWTest < Minitest::Test
-  PART_PATH = File.expand_path("../parts/raspberry_pi_pico_w.yml", __dir__)
-  PIN_NAMES = %w[
-    GP0 GP1 GND GP2 GP3 GP4 GP5 GND GP6 GP7 GP8 GP9 GND GP10 GP11
-    GP12 GP13 GND GP14 GP15 GP16 GP17 GND GP18 GP19 GP20 GP21 GND
-    GP22 RUN GP26 GP27 AGND GP28 ADC_VREF 3V3_OUT 3V3_EN GND VSYS VBUS
-  ].freeze
+part_path = File.expand_path("../parts/raspberry_pi_pico_w.yml", __dir__)
+raise "Pico W definition is missing" unless File.file?(part_path)
 
-  def part
-    assert File.file?(PART_PATH), "Pico W definition is missing"
-    YAML.safe_load(File.read(PART_PATH, encoding: "UTF-8"), aliases: false)
-  end
+part = YAML.safe_load(File.read(part_path, encoding: "UTF-8"), aliases: false)
+pins = part.fetch("pins")
+expected_names = %w[
+  GP0 GP1 GND GP2 GP3 GP4 GP5 GND GP6 GP7 GP8 GP9 GND GP10 GP11
+  GP12 GP13 GND GP14 GP15 GP16 GP17 GND GP18 GP19 GP20 GP21 GND
+  GP22 RUN GP26 GP27 AGND GP28 ADC_VREF 3V3_OUT 3V3_EN GND VSYS VBUS
+]
+actual_names = pins.map { |pin| pin.fetch("name").sub(/\AGND\d+\z/, "GND") }
+raise "Pico W pin numbers differ from the pinout" unless pins.map { |pin| pin.fetch("num") } == (1..40).to_a
+raise "Pico W pin names differ from the pinout" unless actual_names == expected_names
+raise "Pico W ground pins differ from the pinout" unless pins.select { |pin| pin["type"] == "ground" }.map { |pin| pin["num"] } == [3, 8, 13, 18, 23, 28, 33, 38]
+raise "GP0 and GP1 must remain multifunction GPIO" unless pins.first(2).all? { |pin| pin["type"] == "gpio" }
+raise "Pico W must straddle the gap" unless part["straddle"] == true && part["placement"] == "footprint"
+raise "Pico W board dimensions differ from the datasheet" unless part.dig("render", "size_mm") == [51, 21]
+raise "Pico W pinout source is missing" unless part["datasheet_url"] == "https://datasheets.raspberrypi.com/picow/PicoW-A4-Pinout.pdf"
 
-  def test_pins_follow_official_pico_w_pinout
-    pins = part.fetch("pins")
+footprint = part.fetch("footprint")
+expected_footprint = (1..20).to_h { |number| [number.to_s, [number - 1, 0]] }
+expected_footprint.merge!((21..40).to_h { |number| [number.to_s, [40 - number, 7]] })
+raise "Pico W footprint does not match the 40 contacts" unless footprint == expected_footprint
 
-    assert_equal (1..40).to_a, pins.map { |pin| pin.fetch("num") }
-    assert_equal PIN_NAMES, pins.map { |pin| pin.fetch("name").sub(/\AGND\d+\z/, "GND") }
-    assert_equal [3, 8, 13, 18, 23, 28, 33, 38],
-                 pins.select { |pin| pin["type"] == "ground" }.map { |pin| pin["num"] }
-    assert_equal "gpio", pins.first.fetch("type")
-    assert_equal "gpio", pins[1].fetch("type")
-  end
-
-  def test_usb_up_footprint_straddles_a_breadboard_gap
-    definition = part
-    footprint = definition.fetch("footprint")
-
-    assert_equal true, definition.fetch("straddle")
-    assert_equal "footprint", definition.fetch("placement")
-    assert_equal (1..40).map(&:to_s), footprint.keys.sort_by(&:to_i)
-    assert_equal({ "1" => [0, 0], "20" => [19, 0], "21" => [19, 7], "40" => [0, 7] },
-                 footprint.slice("1", "20", "21", "40"))
-    assert_equal [51, 21], definition.fetch("render").fetch("size_mm")
-  end
-
-  def test_definition_links_to_manufacturer_pinout
-    assert_equal "https://datasheets.raspberrypi.com/picow/PicoW-A4-Pinout.pdf",
-                 part.fetch("datasheet_url")
-  end
-end
+puts "Pico W pinout and footprint verified"
