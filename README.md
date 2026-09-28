@@ -1,23 +1,35 @@
-# Breadkit parts
+<p align="center">
+  <a href="https://breadkit.github.io/breadkit/">
+    <img src="https://raw.githubusercontent.com/breadkit/breadkit/main/site/favicon.svg" width="72" height="72" alt="Breadkit">
+  </a>
+</p>
 
-Model-specific part definitions for [Breadkit](https://github.com/breadkit/breadkit). This repository is a separate Git part pack; it is not a gem and has its own revision history.
+<h1 align="center">breadkit-parts</h1>
 
-| Part ID | Model | Source |
-| --- | --- | --- |
-| `pico_w` | Raspberry Pi Pico W | [Official pinout](https://datasheets.raspberrypi.com/picow/PicoW-A4-Pinout.pdf) and [datasheet](https://datasheets.raspberrypi.com/picow/pico-w-datasheet.pdf) |
+<p align="center">
+  <strong>Verified, model-specific parts for Breadkit circuits.</strong>
+</p>
 
-The definition has 40 physical edge pins. With USB facing up, pin 1 is at the upper left and pin 40 at the upper right. The rows are 17.78 mm apart on a 2.54 mm grid; the board is 51 × 21 mm. Pin 33 is analog ground (`AGND`). The three debug pads and wireless-chip pins are not breadboard contacts, so they are not in the footprint. The part has no assumed power source: model how the Pico W is powered in your circuit.
+<p align="center">
+  <a href="https://github.com/breadkit/breadkit-parts/actions/workflows/ci.yml"><img src="https://github.com/breadkit/breadkit-parts/actions/workflows/ci.yml/badge.svg" alt="CI status"></a>
+  <a href="LICENSE.txt"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT license"></a>
+</p>
 
-## Use in a circuit
+This repository provides source-backed YAML part definitions for
+[Breadkit](https://github.com/breadkit/breadkit). It is a versioned Git part
+pack, not a Ruby gem.
 
-Add this repository as a submodule and review the exact commit before committing the submodule pointer:
+## Quick start
+
+Use Breadkit 0.2.0 or newer. In your circuit project, add this repository as a
+submodule and review the commit you are pinning:
 
 ```sh
 git submodule add https://github.com/breadkit/breadkit-parts.git vendor/breadkit-parts
 git -C vendor/breadkit-parts rev-parse HEAD
 ```
 
-Reference its local YAML in a declarative Breadkit circuit:
+Save a declarative circuit as `circuit.bk.yml`:
 
 ```yaml
 board: full
@@ -26,9 +38,7 @@ parts:
   - {ref: MCU, type: pico_w, at: c1}
 ```
 
-With USB at the top, this placement puts the left pin row in column `c` and the right pin row in column `h`. Check your board and pin orientation before wiring. The built-in `pico` part is a different model and does not select this definition.
-
-Record checksums of the selected YAML bytes and commit the circuit, `breadkit.lock`, and submodule pointer together:
+Lock the exact YAML definitions, then analyze the circuit:
 
 ```sh
 breadkit lock circuit.bk.yml
@@ -36,10 +46,35 @@ breadkit nets circuit.bk.yml
 git add .gitmodules vendor/breadkit-parts circuit.bk.yml breadkit.lock
 ```
 
-In CI, check out submodules, then run `breadkit nets circuit.bk.yml`; Breadkit verifies the lockfile before resolving the circuit. See [locking local definitions](https://github.com/breadkit/breadkit/blob/main/docs/LOCK.md). The `lock` and `check-part` commands currently require Breadkit `main`; the published 0.1.0 gem predates them.
+Commit the circuit, lockfile, and submodule pointer together. Breadkit checks
+the locked definitions before resolving the circuit. In CI, check out
+submodules before running `breadkit nets`. See
+[locking local definitions](https://github.com/breadkit/breadkit/blob/main/docs/LOCK.md)
+for details.
+
+## Included parts
+
+| Part ID | Model | Manufacturer source |
+| --- | --- | --- |
+| [`pico_w`](parts/raspberry_pi_pico_w.yml) | Raspberry Pi Pico W | [Pinout](https://datasheets.raspberrypi.com/picow/PicoW-A4-Pinout.pdf) · [Datasheet](https://datasheets.raspberrypi.com/picow/pico-w-datasheet.pdf) |
+
+With USB facing up, pin 1 is at the upper left and pin 40 at the upper right.
+The 40 edge pins sit on a 2.54 mm grid, with 17.78 mm between rows; the board
+measures 51 × 21 mm. Pin 33 is analog ground (`AGND`). Debug pads and
+wireless-chip pins are excluded because they are not breadboard contacts.
+
+This definition assumes no power source; model how the Pico W is powered in
+your circuit. With `at: c1` and USB at the top, its left pin row occupies
+column `c` and its right row occupies column `h`. Check the orientation before
+wiring. Breadkit's built-in `pico` part is a different model.
 
 ## Validation and contributions
 
-CI checks the [manufacturer pinout](https://datasheets.raspberrypi.com/picow/PicoW-A4-Pinout.pdf) against the committed pin list and validates every YAML definition with a pinned Breadkit core revision using `breadkit check-part`. See [CONTRIBUTING.md](CONTRIBUTING.md) before adding a model. Generic breakout names without a fixed, documented pinout are intentionally excluded.
+CI compares the committed pin list with the [manufacturer pinout](https://datasheets.raspberrypi.com/picow/PicoW-A4-Pinout.pdf)
+and validates the YAML with a pinned Breadkit core revision using
+`breadkit check-part`. Before adding a model, read [CONTRIBUTING.md](CONTRIBUTING.md).
+Only exact models with a documented pinout belong in this pack.
 
-Licensed under [MIT](LICENSE.txt).
+## License
+
+[MIT](LICENSE.txt).
