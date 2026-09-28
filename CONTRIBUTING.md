@@ -13,4 +13,4 @@ for file in parts/*.yml; do
 done
 ```
 
-Add a source-backed pin and footprint regression test for each new part. CI currently pins a core commit because released Breadkit 0.1.0 does not include `check-part`; update the pin deliberately after checking compatibility.
+Add a source-backed pin and footprint regression test for each new part. CI validates against the released Breadkit version pinned in `.github/workflows/ci.yml`; update the pin deliberately after checking compatibility.
